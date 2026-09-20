@@ -9,16 +9,33 @@ public class Main {
 
         for (int i = 0; i < casos.length; i++) {
             CasoTeste caso = casos[i];
-            System.out.println("Caso " + (i + 1) + ":");
-            System.out.println("Capacidade de cada lado (segundos): " + caso.getCapacidadeLado());
-            System.out.println("Músicas:");
-
             Musica[] musicas = caso.getMusicas();
-            for (int j = 0; j < musicas.length; j++) {
-                Musica m = musicas[j];
-                System.out.println("  " + m.getMin() + "m " + m.getSeg() + "s (" + m.duracaoEmSegundos() + "s total)");
-            }
+
+            int[] escolha = Mochila.resolver(musicas, caso.getCapacidadeLado());
+            int total = Mochila.getMelhorSoma();
+
+            System.out.println("Caso " + (i + 1) + ":");
+            System.out.println("Capacidade de cada lado: " + caso.getCapacidadeLado() + "s");
+
+            imprimirLado("Lado A", musicas, escolha, Mochila.LADO_A);
+            imprimirLado("Lado B", musicas, escolha, Mochila.LADO_B);
+            imprimirLado("Fora  ", musicas, escolha, Mochila.FORA);
+
+            System.out.println("Tempo total gravado: " + total + "s");
             System.out.println();
         }
+    }
+
+    private static void imprimirLado(String titulo, Musica[] musicas, int[] escolha, int lado) {
+        StringBuilder sb = new StringBuilder();
+        int soma = 0;
+        for (int j = 0; j < musicas.length; j++) {
+            if (escolha[j] == lado) {
+                Musica m = musicas[j];
+                sb.append(m.getMin()).append(":").append(String.format("%02d", m.getSeg())).append("  ");
+                soma += m.duracaoEmSegundos();
+            }
+        }
+        System.out.println(titulo + " (" + soma + "s): " + sb.toString().trim());
     }
 }
