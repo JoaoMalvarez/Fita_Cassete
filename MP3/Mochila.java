@@ -2,48 +2,70 @@ package MP3;
 
 public class Mochila {
 
-    // guardam a melhor solução encontrada em toda a recursão
-    private static int melhorSoma;
-    private static boolean[] melhorEscolha;
+    public static final int FORA = 0;
+    public static final int LADO_A = 1;
+    public static final int LADO_B = 2;
 
-    // método público que você vai chamar de fora (da Main, por exemplo)
-    public static boolean[] resolver(Musica[] musicas, int capacidade) {
+    private static int melhorSoma;
+    private static int[] melhorEscolha;
+    private static int[] sobra; // sobra[i] = soma das duracoes de i até o fim (para poda)
+
+    /** Devolve, para cada música, FORA, LADO_A ou LADO_B. */
+    public static int[] resolver(Musica[] musicas, int capacidade) {
         int n = musicas.length;
 
         melhorSoma = 0;
-        melhorEscolha = new boolean[n];
+        melhorEscolha = new int[n];
 
-        boolean[] usadaAtual = new boolean[n];
-        backtracking(musicas, capacidade, 0, 0, usadaAtual);
+        sobra = new int[n + 1];
+        for (int i = n - 1; i >= 0; i--) {
+            sobra[i] = sobra[i + 1] + musicas[i].duracaoEmSegundos();
+        }
 
-        return melhorEscolha; // diz quais músicas foram pro Lado A
+        backtracking(musicas, capacidade, 0, 0, 0, new int[n]);
+        return melhorEscolha;
     }
 
-    // método recursivo (privado, só usado internamente)
-    private static void backtracking(Musica[] musicas, int capacidade,
-                                      int indice, int somaAtual, boolean[] usadaAtual) {
+    private static void backtracking(Musica[] musicas, int capacidade, int indice, int somaA, int somaB, int[] atual) {
 
-        // caso base: já decidimos sobre todas as músicas
+        int somaAtual = somaA + somaB;
+
+        // poda 1: já achamos uma solução que enche os dois lados, não dá para melhorar
+        if (melhorSoma == 2 * capacidade) {
+            return;
+        }
+
+        // poda 2: nem pegando todas as músicas restantes dá para superar o melhor
+        if (somaAtual + sobra[indice] <= melhorSoma) {
+            return;
+        }
+
         if (indice == musicas.length) {
-            if (somaAtual > melhorSoma) {
-                melhorSoma = somaAtual;
-                // copia o estado atual pra "melhorEscolha", já que usadaAtual
-                // vai continuar mudando nas próximas chamadas
-                System.arraycopy(usadaAtual, 0, melhorEscolha, 0, usadaAtual.length);
-            }
+            melhorSoma = somaAtual;
+            System.arraycopy(atual, 0, melhorEscolha, 0, atual.length);
             return;
         }
 
         int duracao = musicas[indice].duracaoEmSegundos();
 
-        // opção 1: NÃO usar a música "indice"
-        backtracking(musicas, capacidade, indice + 1, somaAtual, usadaAtual);
-
-        // opção 2: usar a música "indice", só se couber (poda)
-        if (somaAtual + duracao <= capacidade) {
-            usadaAtual[indice] = true;
-            backtracking(musicas, capacidade, indice + 1, somaAtual + duracao, usadaAtual);
-            usadaAtual[indice] = false; // "desfaz" a escolha (o backtrack de verdade)
+        // 1) coloca no lado A
+        if (somaA + duracao <= capacidade) {
+            atual[indice] = LADO_A;
+            backtracking(musicas, capacidade, indice + 1, somaA + duracao, somaB, atual);
         }
+
+        // 2) coloca no lado B
+        if (somaB + duracao <= capacidade) {
+            atual[indice] = LADO_B;
+            backtracking(musicas, capacidade, indice + 1, somaA, somaB + duracao, atual);
+        }
+
+        // 3) deixa de fora
+        atual[indice] = FORA;
+        backtracking(musicas, capacidade, indice + 1, somaA, somaB, atual);
+    }
+
+    public static int getMelhorSoma() {
+        return melhorSoma;
     }
 }
